@@ -1,4 +1,4 @@
-# Copyright (C) 2019 Analog Devices, Inc.
+# Copyright (C) 2020 Analog Devices, Inc.
 #
 # All rights reserved.
 #
@@ -31,45 +31,46 @@
 # STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF
 # THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-from adi.ad936x import *
+from adi.context_manager import context_manager
+from adi.rx_tx import rx
+from adi.attribute import attribute
 
-from adi.fmcomms5 import *
 
-from adi.ad9371 import *
+class ad7799(rx, context_manager):
+    """ AD7799 ADC """
 
-from adi.adrv9002 import adrv9002
+    _complex_data = False
+    channel = []  # type: ignore
+    _rx_channel_names = ["channel0", "channel1", "channel2"]
+    _device_name = ""
 
-from adi.adrv9009 import *
+    def __init__(self, uri=""):
 
-from adi.adrv9009_zu11eg import *
+        context_manager.__init__(self, uri, self._device_name)
 
-from adi.ad9680 import *
+        self._rxadc = self._ctx.find_device("AD7799")
 
-from adi.ad9144 import *
+        for name in self._rx_channel_names:
+            self.channel.append(self._channel(self._rxadc, name))
 
-from adi.ad9152 import *
+    @property
+    def gain(self):
+        """Sets gain of the AD7799"""
+        return self._get_iio_dev_attr_str("gain", self._rxadc)
 
-from adi.daq2 import *
+    @gain.setter
+    def gain(self, value):
+        """Sets gain of the AD7799"""
+        self._set_iio_dev_attr_str("gain", value, self._rxadc)
 
-from adi.daq3 import *
+    class _channel(attribute):
+        """AD7799 channel"""
 
-from adi.adis16460 import *
+        def __init__(self, ctrl, channel_name):
+            self.name = channel_name
+            self._ctrl = ctrl
 
-from adi.adis16507 import *
-
-from adi.ad7124 import *
-
-from adi.adxl345 import *
-
-from adi.fmclidar1 import *
-
-from adi.ad5686 import *
-
-from adi.adar1000 import adar1000
-
-from adi.ltc2983 import *
-
-from adi.ad7799 import *
-
-__version__ = "0.0.6"
-name = "Analog Devices Hardware Interfaces"
+        @property
+        def value(self):
+            """AD7124 channel volts value"""
+            return self._get_iio_attr(self.name, "volts", False, self._ctrl)
